@@ -5,28 +5,55 @@ import { authOptions } from '../../../../lib/auth'
 
 async function getCurrentUser(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return null
+    console.log('🔍 Getting current user...')
 
-    return await prisma.user.findUnique({
+    // Try to get session
+    const session = await getServerSession(authOptions)
+    console.log('Session exists:', !!session)
+    console.log('Session user:', session?.user ? { id: session.user.id, email: session.user.email } : null)
+
+    if (!session?.user?.id) {
+      console.log('❌ No session or user ID found')
+      return null
+    }
+
+    console.log('🔍 Looking up user in database:', session.user.id)
+    const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       include: { entity: true }
     })
+
+    console.log('Database user found:', !!user)
+    if (user) {
+      console.log('User details:', {
+        id: user.id,
+        email: user.email,
+        entityId: user.entityId,
+        platformRole: user.platformRole
+      })
+    }
+
+    return user
   } catch (error) {
-    console.error('Error getting current user:', error)
+    console.error('❌ Error getting current user:', error)
     return null
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('📥 GET /api/platform/entities called')
+
     const currentUser = await getCurrentUser(request)
     if (!currentUser) {
+      console.log('❌ Unauthorized: No current user found')
       return NextResponse.json(
         { error: 'Unauthorized - no valid session', success: false },
         { status: 401 }
       )
     }
+
+    console.log('✅ Authorized user:', currentUser.email)
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -35,6 +62,12 @@ export async function GET(request: NextRequest) {
     // Entity-based data isolation
     const isPlatformAdmin = currentUser.platformRole === 'PLATFORM_ADMIN' ||
                            currentUser.platformRole === 'PLATFORM_SUPER_ADMIN'
+
+    console.log('User permissions:', {
+      isPlatformAdmin,
+      entityId: currentUser.entityId,
+      platformRole: currentUser.platformRole
+    })
 
     // Build where clause for filtering with entity isolation
     const where: any = {}
@@ -45,6 +78,7 @@ export async function GET(request: NextRequest) {
         where.id = currentUser.entityId
       } else {
         // User has no entity assigned, return empty results
+        console.log('⚠️ User has no entity assigned')
         return NextResponse.json({
           entities: [],
           stats: { total: 0, active: 0, trial: 0, suspended: 0, totalRevenue: 0, totalUsers: 0 },
@@ -81,6 +115,8 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       }
     })
+
+    console.log('Found entities:', entities.length)
 
     // Calculate summary stats (only for accessible entities)
     const allAccessibleEntities = await prisma.entity.findMany({
@@ -124,6 +160,8 @@ export async function GET(request: NextRequest) {
       integrations: entity.integrations || {}
     }))
 
+    console.log('✅ Returning response with', transformedEntities.length, 'entities')
+
     return NextResponse.json({
       entities: transformedEntities,
       stats,
@@ -135,7 +173,7 @@ export async function GET(request: NextRequest) {
       success: true
     })
   } catch (error) {
-    console.error('Error fetching entities:', error)
+    console.error('❌ Error fetching entities:', error)
     return NextResponse.json(
       { error: 'Failed to fetch entities', success: false },
       { status: 500 }
