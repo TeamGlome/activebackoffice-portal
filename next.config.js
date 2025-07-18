@@ -12,9 +12,7 @@ const nextConfig = {
   },
   experimental: {
   },
-  productionBrowserSourceMaps: false,
-  // Disable strict mode temporarily for dashboard fix
-  swcMinify: false
+  productionBrowserSourceMaps: false
 }
 
 module.exports = nextConfig
