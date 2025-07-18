@@ -1,0 +1,293 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String
+  role          UserRole  @default(USER)
+  platformRole  PlatformRole?
+  userGroup     String?
+  entityId      String?
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  entity   Entity?   @relation(fields: [entityId], references: [id])
+
+  // Analytics and Monitoring Relations
+  analytics     Analytics[]
+  errorLogs     ErrorLog[]
+  userSessions  UserSession[]
+  userActivity  UserActivity[]
+  securityEvents SecurityEvent[]
+  auditLogs     AuditLog[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Analytics and Monitoring Models
+model Analytics {
+  id        String   @id @default(cuid())
+  event     String
+  properties Json    @default("{}")
+  userId    String?
+  sessionId String?
+  ipAddress String?
+  userAgent String?
+  source    String   @default("web")
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([event])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  message   String
+  stack     String?
+  name      String?
+  context   Json     @default("{}")
+  userId    String?
+  url       String?
+  userAgent String?
+  ipAddress String?
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([resolved])
+}
+
+model PerformanceMetric {
+  id        String   @id @default(cuid())
+  name      String
+  value     Float
+  unit      String
+  metadata  Json     @default("{}")
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([name])
+  @@index([timestamp])
+}
+
+// Enhanced User Activity Tracking
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String   @unique
+  ipAddress String?
+  userAgent String?
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  isActive  Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  activity  String
+  metadata  Json     @default("{}")
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([activity])
+  @@index([timestamp])
+}
+
+// Security and Audit Models
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  eventType   String
+  description String
+  severity    String   @default("medium") // low, medium, high, critical
+  ipAddress   String?
+  userAgent   String?
+  userId      String?
+  metadata    Json     @default("{}")
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eventType])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  resourceId String?
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+}
+
+model Entity {
+  id                 String    @id @default(cuid())
+  name               String
+  type               String?
+  category           String?
+  status             String    @default("trial")
+  subscriptionPlan   String?
+  timezone           String?
+  currency           String?
+  fiscalYearStart    String?
+  monthlyAmount      Int?
+  complianceScore    Float?
+  lastAssessment     DateTime?
+  violationsCount    Int?
+  integrations       Json      @default("{}")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  users              User[]
+  categories         EntityCategory[]
+  userGroups         UserGroup[]
+  quickbooksIntegrations QuickBooksIntegration[]
+}
+
+model QuickBooksIntegration {
+  id              String   @id @default(cuid())
+  entityId        String
+  status          IntegrationStatus @default(DISCONNECTED)
+  companyId       String?  // QuickBooks company/realm ID
+  accessToken     String?
+  refreshToken    String?
+  tokenExpiresAt  DateTime?
+  companyInfo     Json?    // Store company information
+  lastSyncAt      DateTime?
+  lastSyncStatus  String?  // success, error, partial
+  syncErrors      Json     @default("[]")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  entity          Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId])
+  @@index([status])
+  @@index([lastSyncAt])
+}
+
+model EntityCategory {
+  id          String   @id @default(cuid())
+  entityId    String?  // null = platform-wide, set = entity-specific
+  type        String   // Real Estate, Property Management, etc.
+  category    String   // building, parking, townhouse, etc.
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entity      Entity?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, type, category])
+}
+
+model UserGroup {
+  id          String   @id @default(cuid())
+  entityId    String?  // null = platform-wide, set = entity-specific
+  name        String   // Managers, Technicians, Accountants, etc.
+  description String?
+  permissions Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entity      Entity?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, name])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum PlatformRole {
+  PLATFORM_ADMIN
+  PLATFORM_SUPER_ADMIN
+}
+
+enum IntegrationStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+  ERROR
+  EXPIRED
+}
