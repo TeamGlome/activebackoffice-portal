@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../../../lib/auth'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL
-    }
-  }
-})
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,13 +15,25 @@ export async function POST(request: NextRequest) {
     console.log('🚀 Starting production database setup...')
 
     // 1. Test database connection
-    await prisma.$connect()
-    console.log('✅ Database connected successfully')
+    try {
+      await prisma.$connect()
+      console.log('✅ Database connected successfully')
+    } catch (error) {
+      console.error('❌ Database connection failed:', error)
+      throw new Error(`Database connection failed: ${error}`)
+    }
 
     // 2. Check if admin user already exists
-    const existingAdmin = await prisma.user.findUnique({
-      where: { email: 'admin@activebackoffice.com' }
-    })
+    let existingAdmin
+    try {
+      existingAdmin = await prisma.user.findUnique({
+        where: { email: 'admin@activebackoffice.com' }
+      })
+      console.log('✅ User lookup completed, exists:', !!existingAdmin)
+    } catch (error) {
+      console.error('❌ Admin user lookup failed:', error)
+      throw new Error(`Admin user lookup failed: ${error}`)
+    }
 
     if (existingAdmin) {
       console.log('✅ Admin user already exists')
@@ -37,66 +41,69 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Admin user already exists',
         adminEmail: existingAdmin.email,
-        adminName: existingAdmin.name
+        adminName: existingAdmin.name,
+        loginUrl: 'https://app.activebackoffice.com/login'
       })
     }
 
-    // 3. Create default entity
-    let entity = await prisma.entity.findFirst({
-      where: { name: 'Active Back Office' }
-    })
+    // 3. Create default entity (matching current schema)
+    let entity
+    try {
+      entity = await prisma.entity.findFirst({
+        where: { name: 'Active Back Office' }
+      })
+      console.log('✅ Entity lookup completed, exists:', !!entity)
+    } catch (error) {
+      console.error('❌ Entity lookup failed:', error)
+      throw new Error(`Entity lookup failed: ${error}`)
+    }
 
     if (!entity) {
-      entity = await prisma.entity.create({
-        data: {
-          id: 'abo-main-entity',
-          name: 'Active Back Office',
-          type: 'PLATFORM',
-          isActive: true,
-          settings: {
+      try {
+        entity = await prisma.entity.create({
+          data: {
+            name: 'Active Back Office',
+            type: 'Platform',
+            status: 'active',
+            subscriptionPlan: 'enterprise',
             timezone: 'America/New_York',
             currency: 'USD',
-            features: ['DASHBOARD', 'INTEGRATIONS', 'REPORTS', 'USER_MANAGEMENT']
+            fiscalYearStart: '01-01',
+            monthlyAmount: 0,
+            complianceScore: 100.0,
+            violationsCount: 0,
+            integrations: {}
           }
-        }
-      })
-      console.log('✅ Created default entity')
+        })
+        console.log('✅ Created default entity:', entity.id)
+      } catch (error) {
+        console.error('❌ Entity creation failed:', error)
+        throw new Error(`Entity creation failed: ${error}`)
+      }
     }
 
-    // 4. Create admin user
-    const hashedPassword = await bcrypt.hash('creadmin123!', 12)
+    // 4. Create admin user (matching current schema)
+    try {
+      const hashedPassword = await bcrypt.hash('creadmin123!', 12)
+      console.log('✅ Password hashed successfully')
 
-    const adminUser = await prisma.user.create({
-      data: {
-        id: 'admin-super-user',
-        email: 'admin@activebackoffice.com',
-        name: 'Super Administrator',
-        password: hashedPassword,
-        role: 'SUPER_ADMIN',
-        platformRole: 'PLATFORM_SUPER_ADMIN',
-        entityId: entity.id,
-        isActive: true,
-        emailVerified: new Date(),
-        settings: {
-          theme: 'dark',
-          notifications: true,
-          twoFactorEnabled: false
+      const adminUser = await prisma.user.create({
+        data: {
+          email: 'admin@activebackoffice.com',
+          name: 'Super Administrator',
+          password: hashedPassword,
+          role: 'SUPER_ADMIN',
+          platformRole: 'PLATFORM_SUPER_ADMIN',
+          entityId: entity.id,
+          isActive: true,
+          emailVerified: new Date()
         }
-      }
-    })
-
-    // 5. Create API key for admin
-    await prisma.apiKey.create({
-      data: {
-        id: 'admin-api-key',
-        name: 'Admin Development Key',
-        key: 'abo_' + Math.random().toString(36).substring(2, 15),
-        entityId: entity.id,
-        permissions: ['READ', 'WRITE', 'DELETE'],
-        isActive: true,
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
-      }
-    })
+      })
+      console.log('✅ Created admin user:', adminUser.id)
+    } catch (error) {
+      console.error('❌ Admin user creation failed:', error)
+      throw new Error(`Admin user creation failed: ${error}`)
+    }
 
     console.log('🎉 Production setup completed successfully!')
 
@@ -116,7 +123,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Production setup failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      step: 'Check console logs for detailed error information'
     }, { status: 500 })
   } finally {
     await prisma.$disconnect()
@@ -126,15 +134,20 @@ export async function POST(request: NextRequest) {
 // GET method for status check
 export async function GET() {
   try {
+    console.log('🔍 Checking database status...')
+
     await prisma.$connect()
+    console.log('✅ Database connection successful')
 
     const adminExists = await prisma.user.findUnique({
       where: { email: 'admin@activebackoffice.com' }
     })
+    console.log('✅ Admin check completed, exists:', !!adminExists)
 
     const entityExists = await prisma.entity.findFirst({
       where: { name: 'Active Back Office' }
     })
+    console.log('✅ Entity check completed, exists:', !!entityExists)
 
     return NextResponse.json({
       status: 'ready',
@@ -144,9 +157,13 @@ export async function GET() {
       setupRequired: !adminExists || !entityExists
     })
   } catch (error) {
+    console.error('❌ Database status check failed:', error)
     return NextResponse.json({
       status: 'error',
       databaseConnected: false,
+      adminUserExists: false,
+      entityExists: false,
+      setupRequired: true,
       error: error instanceof Error ? error.message : 'Database connection failed'
     }, { status: 500 })
   } finally {
