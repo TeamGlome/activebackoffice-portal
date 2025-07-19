@@ -158,7 +158,8 @@ export function middleware(request: NextRequest) {
       '/api/force-setup',
       '/api/debug-setup',
       '/api/debug-quickbooks',
-      '/api/test-quickbooks'
+      '/api/test-quickbooks',
+      '/api/fix-quickbooks-integrations'
     ]
 
     const isProtectedRoute = protectedApiRoutes.some(route =>

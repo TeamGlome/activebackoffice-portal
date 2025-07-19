@@ -116,24 +116,31 @@ export async function GET(request: NextRequest) {
 
     const finalEntityId = entity_id || currentUser.entityId
 
-    // Get integration for entity
-    const integration = await prisma.quickBooksIntegration.findUnique({
+    // Get integration for entity, create if doesn't exist
+    let integration = await prisma.quickBooksIntegration.findUnique({
       where: { entityId: finalEntityId }
     })
 
     if (!integration) {
-      return NextResponse.json({
-        connected: false,
-        error: 'No QuickBooks integration found for this entity',
-        success: false
+      // Create a disconnected integration record for this entity
+      integration = await prisma.quickBooksIntegration.create({
+        data: {
+          entityId: finalEntityId,
+          status: 'DISCONNECTED',
+          isActive: true
+        }
       })
+      console.log(`Created new QuickBooks integration record for entity: ${finalEntityId}`)
     }
 
     if (integration.status !== 'CONNECTED') {
       return NextResponse.json({
         connected: false,
-        error: `QuickBooks integration status: ${integration.status}`,
-        success: false
+        status: integration.status,
+        error: integration.status === 'DISCONNECTED'
+          ? 'QuickBooks is not connected. Click "Connect to QuickBooks" to get started.'
+          : `QuickBooks integration status: ${integration.status}`,
+        success: true // Still a successful response, just not connected
       })
     }
 
@@ -205,8 +212,8 @@ export async function POST(request: NextRequest) {
 
     if (!integration) {
       return NextResponse.json(
-        { error: 'No QuickBooks integration found for this entity', success: false },
-        { status: 404 }
+        { error: 'QuickBooks is not connected for this entity. Please connect first.', success: false },
+        { status: 400 }
       )
     }
 
