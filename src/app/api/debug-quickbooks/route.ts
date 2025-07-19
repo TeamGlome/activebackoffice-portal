@@ -70,6 +70,10 @@ export async function GET(request: NextRequest) {
           'Verify callback receives parameters'
         ]
       }
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     })
 
   } catch (error) {
