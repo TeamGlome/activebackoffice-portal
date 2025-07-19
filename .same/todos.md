@@ -1,5 +1,24 @@
 # Current Tasks
 
+## 🔄 URGENT: Fix JavaScript Errors & QuickBooks OAuth
+
+### Immediate Issues Found ⚠️
+1. **JavaScript Error Source**: `same-runtime` script still present in layout.tsx
+   - This was causing the deployment sync issues before rollback
+   - Must be removed to prevent JavaScript syntax errors
+
+2. **QuickBooks OAuth Error**: "Failed to connect: Authorization code, state, and realm ID are required"
+   - OAuth callback not receiving expected parameters
+   - Need to debug callback handler and OAuth flow
+   - Environment variables need verification
+
+### Next Steps 🚀
+1. **Remove same-runtime script** from layout.tsx ✅ (In Progress)
+2. **Check QuickBooks callback handler** for parameter processing
+3. **Verify OAuth flow** and redirect URI configuration
+4. **Test QuickBooks integration** with correct environment variables
+5. **Deploy and version** fixes
+
 ## ✅ COMPLETED: Multi-Tenant Data Isolation & Test Data Cleanup
 
 ### Multi-Tenant Architecture Implemented ✅
@@ -54,59 +73,6 @@
 - **Database Creation**: Automated table and enum creation
 - **Validation**: Test queries to ensure schema works
 
-## ✅ COMPLETED: Frontend Integration Fixes
-
-### QuickBooks Page Updates ✅
-- **Real Authentication**: Replaced mock data with NextAuth session
-- **API Integration**: Updated all calls to match new database endpoints
-- **OAuth Flow**: Improved popup handling and callback processing
-- **Error Handling**: Better success/error feedback from OAuth redirect
-- **TypeScript Types**: Fixed NextAuth session types for entityId
-
-### Setup Page Fix ✅
-- **Client-Side Error Resolved**: Simplified page to remove component dependencies
-- **Import Issues Fixed**: Removed problematic UI library imports
-- **Native HTML Elements**: Replaced custom components with standard elements
-- **Functionality Preserved**: All setup features still working
-- **QuickBooks Migration**: Included in simplified interface
-
-## 🔄 CURRENT: Environment Configuration & Testing
-
-### Next Tasks:
-1. **Test Setup Page Access** ✅
-   - Verify https://app.activebackoffice.com/setup loads without errors
-   - Run QuickBooks schema migration
-   - Check database status
-
-2. **Add QuickBooks Environment Variables** 🔄
-   - QUICKBOOKS_CLIENT_ID
-   - QUICKBOOKS_CLIENT_SECRET
-   - QUICKBOOKS_REDIRECT_URI
-   - QUICKBOOKS_SANDBOX (true/false)
-
-3. **Test Complete Integration Flow** 🔄
-   - Test OAuth connection with sandbox credentials
-   - Verify data sync functionality
-   - Test disconnection process
-   - Validate multi-tenant access controls
-
-## 📋 Version Status
-- Repository: Private GitHub repo `TeamGlome/activebackoffice-portal`
-- Deployment: Vercel at https://app.activebackoffice.com
-- **Latest Version 58**: Setup Page Client-Side Error Fix
-- **Production-ready** with working setup page and QB integration ready for env vars
-
-## ✅ Production Features Complete
-- Authentication system with admin access
-- Real database integration (Postgres via Supabase)
-- Multi-tenant entity management with data isolation
-- Role-based user management system
-- Security dashboard and monitoring
-- GitHub repository optimized for Vercel deployment
-- Test data cleanup system for production readiness
-- **QuickBooks integration database schema and API endpoints**
-- **Working setup page without client-side errors**
-
 ## 🎯 Ready for QuickBooks Production Setup
 - Setup page now accessible without errors
 - Database schema implemented and ready
@@ -114,4 +80,10 @@
 - OAuth flow with proper callback handling
 - Token management with refresh capability
 - Multi-tenant access controls in place
-- Just needs environment variables and testing
+- **CRITICAL**: Need to remove same-runtime script and fix OAuth callback
+
+## 📋 Environment Variables Needed
+- QUICKBOOKS_CLIENT_ID
+- QUICKBOOKS_CLIENT_SECRET
+- QUICKBOOKS_REDIRECT_URI=https://app.activebackoffice.com/dashboard/integrations/quickbooks/callback
+- QUICKBOOKS_SANDBOX=false (for production)

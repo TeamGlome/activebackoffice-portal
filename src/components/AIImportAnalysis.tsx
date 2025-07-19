@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
@@ -55,11 +55,7 @@ export default function AIImportAnalysis({
 
   const aiEngine = new AICSVImportEngine()
 
-  useEffect(() => {
-    performAIAnalysis()
-  }, [headers, sampleData, performAIAnalysis])
-
-  const performAIAnalysis = async () => {
+  const performAIAnalysis = useCallback(async () => {
     setIsAnalyzing(true)
     try {
       const result = await aiEngine.analyzeCSV(headers, sampleData)
@@ -70,7 +66,11 @@ export default function AIImportAnalysis({
       console.error('AI analysis failed:', error)
     }
     setIsAnalyzing(false)
-  }
+  }, [headers, sampleData, aiEngine, onFieldMappingChange, onTemplateSelect])
+
+  useEffect(() => {
+    performAIAnalysis()
+  }, [performAIAnalysis])
 
   const getConfidenceColor = (confidence: AIConfidenceLevel) => {
     switch (confidence) {

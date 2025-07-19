@@ -14,7 +14,9 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false,
   // Disable strict mode temporarily for dashboard fix
-  swcMinify: false
+  swcMinify: false,
+  // Netlify deployment optimization
+  trailingSlash: false
 }
 
 module.exports = nextConfig
