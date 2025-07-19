@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - Active Back Office</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .offline-container {
+      text-align: center;
+      max-width: 500px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 48px 32px;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: #f97316;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .offline-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      opacity: 0.6;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      color: #f1f5f9;
+    }
+
+    p {
+      color: #94a3b8;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      background: rgba(51, 65, 85, 0.3);
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      text-align: left;
+    }
+
+    .feature-list h3 {
+      color: #f1f5f9;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .feature-list ul {
+      list-style: none;
+      space-y: 8px;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      color: #10b981;
+      font-weight: bold;
+      margin-right: 12px;
+      width: 16px;
+    }
+
+    .retry-button {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 16px;
+    }
+
+    .retry-button:hover {
+      background: #ea580c;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      padding: 8px 16px;
+      border-radius: 24px;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .offline-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .app-info {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #334155;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .cached-data-notice {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <div class="logo">ABO</div>
+
+    <div class="status-indicator">
+      <div class="offline-dot"></div>
+      You're currently offline
+    </div>
+
+    <h1>You're Offline</h1>
+    <p>No internet connection detected. Don't worry - Active Back Office works offline too!</p>
+
+    <div class="feature-list">
+      <h3>Available Offline Features:</h3>
+      <ul>
+        <li>View cached dashboard data</li>
+        <li>Browse previously loaded properties</li>
+        <li>Access compliance information</li>
+        <li>Review integration status</li>
+        <li>Use AI chat assistant (limited)</li>
+        <li>View saved reports and documents</li>
+      </ul>
+    </div>
+
+    <div class="cached-data-notice">
+      <strong>📱 App Features Available:</strong> You can still access most features using cached data. Any changes you make will be synced when you're back online.
+    </div>
+
+    <button class="retry-button" onclick="retryConnection()">
+      🔄 Retry Connection
+    </button>
+
+    <button class="retry-button" onclick="goToDashboard()" style="background: #6366f1; margin-left: 12px;">
+      📊 Open Dashboard
+    </button>
+
+    <div class="app-info">
+      <strong>Active Back Office</strong><br>
+      AI-Powered Business Operations Platform<br>
+      <small>This app works offline and will sync when connected</small>
+    </div>
+  </div>
+
+  <script>
+    function retryConnection() {
+      if (navigator.onLine) {
+        window.location.reload()
+      } else {
+        // Show a message that we're still offline
+        const button = document.querySelector('.retry-button')
+        const originalText = button.textContent
+        button.textContent = '⚠️ Still Offline'
+        button.style.background = '#ef4444'
+
+        setTimeout(() => {
+          button.textContent = originalText
+          button.style.background = '#f97316'
+        }, 2000)
+      }
+    }
+
+    function goToDashboard() {
+      window.location.href = '/dashboard'
+    }
+
+    // Listen for online event
+    window.addEventListener('online', () => {
+      const indicator = document.querySelector('.status-indicator')
+      indicator.innerHTML = '<div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div> Connection restored!'
+      indicator.style.background = 'rgba(16, 185, 129, 0.1)'
+      indicator.style.borderColor = 'rgba(16, 185, 129, 0.2)'
+      indicator.style.color = '#6ee7b7'
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    })
+
+    // Update online status
+    function updateOnlineStatus() {
+      if (navigator.onLine) {
+        window.location.reload()
+      }
+    }
+
+    window.addEventListener('online', updateOnlineStatus)
+
+    // Periodically check connection
+    setInterval(() => {
+      if (navigator.onLine) {
+        fetch('/api/ping', { method: 'HEAD', cache: 'no-cache' })
+          .then(() => {
+            window.location.reload()
+          })
+          .catch(() => {
+            // Still offline or server not responding
+          })
+      }
+    }, 30000) // Check every 30 seconds
+  </script>
+</body>
+</html>
